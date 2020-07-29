@@ -665,7 +665,7 @@ class Model: NSObject, NSCoding {
                 if !silent {
                     addToTrace("Operator \(op.name) failed", level: 2)
                 }
-                commitToTrace(true)
+                commitToTrace(true) // 这里开始trace
                 buffers["goal"] = formerBuffers["goal"]
                 buffers["imaginal"] = formerBuffers["imaginal"]
                 buffers["input"] = formerBuffers["input"]
@@ -683,6 +683,8 @@ class Model: NSObject, NSCoding {
             //addToBatchTrace(time - startTime, type: "operator", addToTrace: "\(procedural.lastOperator!.name)")
             let dl = DataLine(eventType: "operator", eventParameter1: buffers["goal"]!.slotvals["last-operator"]!.description, eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
             outputData.append(dl)
+            //书签let dl_reH = DataLine(eventType: "operator", eventParameter1: buffers["goal"]!.slotvals["last-operator"]!.description, eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
+            //outputData.append(dl_reH)
             firings = 0
         }
         commitToTrace(false)
