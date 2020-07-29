@@ -683,7 +683,7 @@ class Model: NSObject, NSCoding {
             //addToBatchTrace(time - startTime, type: "operator", addToTrace: "\(procedural.lastOperator!.name)")
             let dl = DataLine(eventType: "operator", eventParameter1: buffers["goal"]!.slotvals["last-operator"]!.description, eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
             outputData.append(dl)
-            //书签let dl_reH = DataLine(eventType: "operator", eventParameter1: buffers["goal"]!.slotvals["last-operator"]!.description, eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
+            //书签let dl_reH = DataLine(eventType: "operator", eventParameter1: buffers["retrievalH"]!.description, eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
             //outputData.append(dl_reH)
             firings = 0
         }
