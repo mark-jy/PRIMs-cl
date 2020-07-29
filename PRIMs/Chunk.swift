@@ -276,7 +276,7 @@ class Chunk: NSObject, NSCoding {
             return base
         } else {
             return base + model.dm.explorationExploitationFactor * actrNoise(model.dm.defaultOperatorAssoc) / sqrt(Double(references))
-        }   // ex-ex: 默认为0，sji_noise随reference增加而减少
+        }   // ex-ext: 默认为0，sji_noise随reference增加而减少
     }
     
     /**
@@ -288,7 +288,7 @@ class Chunk: NSObject, NSCoding {
     - returns: the Sji value
     */
     func sji(_ chunk: Chunk, buffer: String? = nil, slot: String? = nil) -> Double {  // "_ chunk"：sji("ch", buffer: im...)；"? = nil"：有则解，无则返无
-        if model.dm.contextOperatorLearning && slot != nil {  // cl的条件：若cl真，slot非无
+        if model.dm.contextOperatorLearning && slot != nil {  // cl：若cl真，slot非无
             let value = chunk.assocs[buffer! + "%" + slot! + "%" + self.name] // 更准确是sjik的weight
             if value != nil {
                 return calculateSji(value!)  // 计算Sijk，见line_273
@@ -296,9 +296,9 @@ class Chunk: NSObject, NSCoding {
                 return 0.0
             }
         }
-        if let value = chunk.assocs[self.name] {  // 非cl
+        if let value = chunk.assocs[self.name] {  // ch自关联 (+ ex-ext)
             return calculateSji(value)
-        } else if self.appearsInSlotOf(chunk) {
+        } else if self.appearsInSlotOf(chunk) {  // ch在ch内
             return max(0, model.dm.maximumAssociativeStrength - log(Double(max(1,self.fan))))
         }
         return 0.0
