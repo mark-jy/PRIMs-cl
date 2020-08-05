@@ -485,11 +485,30 @@ class Declarative: NSObject, NSCoding  {
                 if !model.silent {
                     model.addToTrace("Stuffing retrieval buffer \(retrieveResult!.name) (latency = \(latency.string(fractionDigits: 3)))", level: 2)
                 }
+                /* mark: trace dm-chunks (currently only up to the 4th slot)
+                eventParameter1 is the name of chunk, so it could be instantiated chunk "something" or "imaginal-num-something"
+                eventParameter2 is the actual content of the chunk, so here "imaginal-num-something" is listed out as "something-something", here "_" means empty slot "nil"
+                **/
+                let dl = DataLine(eventType: "retrieval", eventParameter1: "\(retrieveResult!.name)", eventParameter2:
+                    "\(retrieveResult!.slotvals["slot1"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot2"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot3"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot4"]?.description ?? "_")", eventParameter3: "void", inputParameters: model.scenario.inputMappingForTrace, time: model.time - model.startTime, firings: model.firings)
+                model.outputData.append(dl)
+                model.firings = 0
                // model.addToBatchTrace(model.time - model.startTime, type: "retrieval", addToTrace: "\(retrieveResult!.name)")
             } else {
                 if !model.silent {
                     model.addToTrace("Retrieving \(retrieveResult!.name) (latency = \(latency.string(fractionDigits: 3)))", level: 2)
                 }
+                // mark: trace dm-chunks (as above)
+                let dl = DataLine(eventType: "retrieval", eventParameter1: "\(retrieveResult!.name)", eventParameter2:
+                    "\(retrieveResult!.slotvals["slot1"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot2"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot3"]?.description ?? "_")" + "-" +
+                    "\(retrieveResult!.slotvals["slot4"]?.description ?? "_")", eventParameter3: "void", inputParameters: model.scenario.inputMappingForTrace, time: model.time - model.startTime, firings: model.firings)
+                model.outputData.append(dl)
+                model.firings = 0
              //   model.addToBatchTrace(model.time - model.startTime, type: "retrieval", addToTrace: "\(retrieveResult!.name)")
                 if retrievalReinforces {
                     retrieveResult!.addReference()
@@ -500,6 +519,10 @@ class Declarative: NSObject, NSCoding  {
             if !model.silent {
                 model.addToTrace("Retrieval failure", level: 2)
             }
+            // mark: retrieval failure
+            let dl = DataLine(eventType: "retrievalf", eventParameter1: "failure", eventParameter2: "void", eventParameter3: "void", inputParameters: model.scenario.inputMappingForTrace, time: model.time - model.startTime, firings: model.firings)
+            model.outputData.append(dl)
+            model.firings = 0
          //   model.addToBatchTrace(model.time - model.startTime, type: "retrieval", addToTrace: "Failure")
             let failChunk = Chunk(s: "RetrievalFailure", m: model)
             failChunk.setSlot("slot1", value: "error")
