@@ -486,8 +486,8 @@ class Declarative: NSObject, NSCoding  {
                     model.addToTrace("Stuffing retrieval buffer \(retrieveResult!.name) (latency = \(latency.string(fractionDigits: 3)))", level: 2)
                 }
                 /* mark: trace dm-chunks (currently only up to the 4th slot)
-                eventParameter1 is the name of chunk, so it could be instantiated chunk "something" or "imaginal-num-something"
-                eventParameter2 is the actual content of the chunk, so here "imaginal-num-something" is listed out as "something-something", here "_" means empty slot "nil"
+                eventParameter1 is the name of chunk
+                eventParameter2 is the actual content of the chunk slots up to the 4th slot
                 **/
                 let dl = DataLine(eventType: "retrieval", eventParameter1: "\(retrieveResult!.name)", eventParameter2:
                     "\(retrieveResult!.slotvals["slot1"]?.description ?? "_")" + "-" +
