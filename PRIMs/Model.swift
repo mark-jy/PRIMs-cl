@@ -648,7 +648,7 @@ class Model: NSObject, NSCoding {
                     running = false
                     fallingThrough = true
                     //                    procedural.issueReward(0.0)
-                    operators.updateOperatorSjis(0.0)
+                    // operators.updateOperatorSjis(0.0) // mark: this is comment out here only for task that has very long continuous stream of stimuli, thus no penalty at the end if the model doesn't reach the reward state in such a senario
                     let dl = DataLine(eventType: "trial-end", eventParameter1: "fail", eventParameter2: "void", eventParameter3: "void", inputParameters: scenario.inputMappingForTrace, time: time - startTime, firings: firings)
                     outputData.append(dl)
                     firings = 0
