@@ -310,8 +310,8 @@ class Operator {
         guard goalChunks != [] else { return }
         var prevOperatorChunk: Chunk? = nil
         for (operatorChunk,operatorTime,context) in failedOperators {
-            let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / model.negreward
-            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / model.negreward
+            let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / (0 - model.negreward)
+            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / (0 - model.negreward)
             if model.dm.contextOperatorLearning {
                 for (bufferName, slotName, chunk) in context {
                     let triplet = bufferName + "%" + slotName + "%" + chunk.name
