@@ -1,5 +1,5 @@
 #### 2020-08-14
-add negative learning to rid failedOp-Context overload
+add negative learning to "context-out" failedOp overload
 
 #### 2020-08-05
 trace declarative chunks
