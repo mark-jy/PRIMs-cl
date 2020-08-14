@@ -51,6 +51,7 @@ let scriptFunctions: [String:([Factor], Model?) throws -> (result: Factor?, done
     "set-graph-title": setGraphTitle,
     "data-line": dataLine,
     "issue-reward": issueReward,
+    "issue-penalty": issueNegReward, //mark: simultaneous negreward
     "shuffle": shuffle,
     "length": length,
     "sleep": sleepPrims,
@@ -505,6 +506,25 @@ func issueReward(_ content: [Factor], model: Model?) throws -> (result: Factor?,
     model!.operators.updateOperatorSjis(reward)
     return (nil, true)
 }
+
+/**
+  mark: Issue a negative reward simultaneously
+*/
+func issueNegReward(_ content: [Factor], model: Model?) throws -> (result: Factor?, done: Bool) {
+    var negreward = model!.negreward
+    if content.count > 0 {
+        switch (content[0]) {
+        case .realNumber(let num):
+            negreward = num
+        case .intNumber(let num):
+            negreward = Double(num)
+        default: throw RunTimeError.nonNumberArgument
+        }
+    }
+    model!.operators.updateOperatorSjisNeg(negreward)
+    return (nil, true)
+}
+
 
 /**
   Move the model clock forward by the number of seconds in the argument
