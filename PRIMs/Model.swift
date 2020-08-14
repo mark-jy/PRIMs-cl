@@ -92,6 +92,11 @@ class Model: NSObject, NSCoding {
     static let rewardDefault = 0.0
     /// Reward used for operator-goal association learning. Also determines maximum run time. Switched off when set to 0.0 (default)
     var reward: Double = rewardDefault
+    
+    static let negRewardDefault = 1.0
+    /// mark: Negative reward used for operator-goal association learning. Also determines maximum run time. Switched off when set to positive i.e. arbt.ly 1.0 here (default)
+    var negreward: Double = negRewardDefault
+    
     static let operatorLearningDefault = false
     /// Switch for operator learning
     var operatorLearning = operatorLearningDefault
@@ -497,6 +502,8 @@ class Model: NSObject, NSCoding {
                 dm.beta = numVal!
             case "reward:":
                 self.reward = numVal!
+            case "negreward:":
+                self.negreward = numVal!
             case "procedural-reward:":
                 procedural.proceduralReward = numVal!
             case "explore-exploit:":
@@ -525,6 +532,7 @@ class Model: NSObject, NSCoding {
         imaginal.setParametersToDefault()
         temporal.setParametersToDefault()
         reward = Model.rewardDefault
+        negreward = Model.negRewardDefault
         operatorLearning = Model.operatorLearningDefault
     }
     
@@ -677,7 +685,7 @@ class Model: NSObject, NSCoding {
                 buffers["retrievalH"] = formerBuffers["retrievalH"]
                 buffers["constants"] = formerBuffers["constants"]
 //                bufferStack = bufferStackCopy  // This is not perfect because other Chunks may have been modified
-                operators.removeLastOperatorRecord()
+                operators.moveLastOperatorRecordToFailedOperators()
                 procedural.clearRewardTrace()  // Don't reward productions that didn't work
             }
         } while !found
