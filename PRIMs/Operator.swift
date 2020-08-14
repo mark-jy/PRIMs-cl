@@ -112,6 +112,8 @@ class Operator {
     unowned let model: Model
     /// List of chosen operators with time and context. Context is use to support learning between all context chunks and operators
     var previousOperators: [(Chunk,Double,[(String, String, Chunk)])] = []
+    /// mark: List of unfired operators with time and context. Context is use to support learning between all context chunks and operators
+    var failedOperators: [(Chunk,Double,[(String, String, Chunk)])] = []
 
     init(model: Model) {
         self.model = model
@@ -235,7 +237,6 @@ class Operator {
         var prevOperatorChunk: Chunk? = nil
         for (operatorChunk,operatorTime,context) in previousOperators {
             let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / model.reward
-            let goalOpReward_neg = model.dm.defaultOperatorAssoc * (0 - (model.time - operatorTime)) / model.reward // mark: simultaneously issue neg. reward to "failed operations - context" so those unusable operations are less likely to be selected by the model
             let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / model.reward         
             if model.dm.contextOperatorLearning {
                 for (bufferName, slotName, chunk) in context {
@@ -278,6 +279,84 @@ class Operator {
                     operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
                     if !model.silent {
                         model.addToTrace("Updating assoc between \(prevOperatorChunk!.name) and \(operatorChunk.name) to \(operatorChunk.assocs[prevOperatorChunk!.name]!.0.string(fractionDigits: 3))", level: 5)
+                    }
+                    prevOperatorChunk = operatorChunk
+                }
+
+            }
+        }
+    }
+    
+    
+    /**
+    mark: add negative reinforcement to failedOperators and their associated Context
+    */
+    
+    func updateOperatorSjisNeg(_ payoff: Double) {
+        defer {
+            failedOperators = [] // Once we're done clear the previous operators
+        }
+        guard (model.dm.goalOperatorLearning || model.dm.interOperatorLearning || model.dm.contextOperatorLearning) && model.negreward <= 0.0  else { return }
+        let goalChunk = model.formerBuffers["goal"] // take formerBuffers goal, because goal may have been replaced by stop or nil
+        guard goalChunk != nil else { return }
+        var goalChunks = Set<Chunk>()
+        var index = 1
+        while let nextChunk = goalChunk!.slotvals["slot\(index)"] {
+            if let isChunk = nextChunk.chunk() {
+                goalChunks.insert(isChunk)
+            }
+            index += 1
+        }
+        guard goalChunks != [] else { return }
+        var prevOperatorChunk: Chunk? = nil
+        for (operatorChunk,operatorTime,context) in failedOperators {
+            let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / model.negreward
+            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / model.negreward
+            if model.dm.contextOperatorLearning {
+                for (bufferName, slotName, chunk) in context {
+                    let triplet = bufferName + "%" + slotName + "%" + chunk.name
+                    if operatorChunk.assocs[triplet] == nil {
+                        operatorChunk.assocs[triplet] = (0.0, 0)
+                    }
+                    operatorChunk.assocs[triplet]!.0 += model.dm.beta * (goalOpReward - operatorChunk.assocs[triplet]!.0)
+                    operatorChunk.assocs[triplet]!.1 += 1
+                    /**
+                    if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
+                        operatorChunk.addReference() // Also increase baselevel activation of the operator
+                    }
+                    */
+                    if !model.silent {
+                        model.addToTrace("[neg] Updating assoc between \(triplet) and \(operatorChunk.name) to \(operatorChunk.assocs[triplet]!.0.string(fractionDigits: 3))", level: 5)
+                    }
+                }
+            }
+            if model.dm.goalOperatorLearning {
+                for goal in goalChunks {
+                    if operatorChunk.assocs[goal.name] == nil {
+                        operatorChunk.assocs[goal.name] = (0.0, 0)
+                    }
+                    operatorChunk.assocs[goal.name]!.0 += model.dm.beta * (goalOpReward - operatorChunk.assocs[goal.name]!.0)
+                    operatorChunk.assocs[goal.name]!.1 += 1
+                    /**
+                    if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
+                        operatorChunk.addReference() // Also increase baselevel activation of the operator
+                    }
+                    */
+                    if !model.silent {
+                        model.addToTrace("[neg] Updating assoc between \(goal.name) and \(operatorChunk.name) to \(operatorChunk.assocs[goal.name]!.0.string(fractionDigits: 3))", level: 5)
+                    }                }
+            }
+            if model.dm.interOperatorLearning {
+                if prevOperatorChunk == nil {
+                    prevOperatorChunk = operatorChunk
+                } else {
+                    if operatorChunk.assocs[prevOperatorChunk!.name] == nil {
+                        operatorChunk.assocs[prevOperatorChunk!.name] = (0.0, 0)
+                    }
+                    operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (interOpReward - operatorChunk.assocs[prevOperatorChunk!.name]!.0)
+                    operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
+                    if !model.silent {
+                        model.addToTrace("[neg] Updating assoc between \(prevOperatorChunk!.name) and \(operatorChunk.name) to \(operatorChunk.assocs[prevOperatorChunk!.name]!.0.string(fractionDigits: 3))", level: 5)
                     }
                     prevOperatorChunk = operatorChunk
                 }
@@ -467,9 +546,12 @@ class Operator {
     /**
         Remove the last operator record. To be called if an operator fails
     */
-    func removeLastOperatorRecord() {
+    func moveLastOperatorRecordToFailedOperators() {
         if !previousOperators.isEmpty {
+            let lastElement = previousOperators.last!
+            failedOperators.append(lastElement)
             _ = previousOperators.removeLast()
+            model.addToTrace(">>> Move \(lastElement.0.name) from prevOperators to failedOperators", level: 5)
         }
     }
     
