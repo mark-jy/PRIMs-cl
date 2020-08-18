@@ -1,0 +1,340 @@
+define task edl-to-learn-aba {
+    initial-skills: (learn)
+    ol: t
+    rt: 0.0
+    lf: 0.2
+    bll: 0.05
+    default-activation: 8.0
+    retrieval-reinforces: t
+    default-operator-self-assoc: -1
+    
+    default-operator-assoc: 1
+    default-inter-operator-assoc: 1
+    
+    edl-context-operator-learning: t
+    //inter-operator-learning: t
+    
+    input-activation: 2.0    
+    ga: 1.0
+    mp: 5.0
+    reward: 1.0
+    negreward: -1.0
+    beta: 0.1
+    opc: t
+    explore-exploit: 0.5
+}
+
+
+
+//=====================================================//
+/////////WORKING MEMORY///////////////////////////////////////////
+//=====================================================//
+
+define skill primary-network-wm {
+
+	//~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: IGNORE    //
+	//~~~~~~~~~~~~~~~~~~~~~//
+
+	operator a_ignore-input-wm-nil {
+	    V1 <> nil
+	    WM1 = nil
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	operator a_ignore-input-wm-full {
+	    V1 <> nil
+	    WM1 <> nil
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: INPUT TO WORKING MEMORY    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	
+	operator a_input-to-working-memory-encode {
+	    V1 <> nil
+	    WM1 = nil
+	==>
+	    V2 -> WM1
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	operator a_input-to-working-memory-replace {			
+	   V1 <> nil
+	   WM1 <> nil 
+	==>
+	    V2 -> WM1
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: INPUT VS. WORKING MEMORY    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator b_input-vs-working-memory-match {	    
+	    WM1 <> nil
+	    V2 = WM1
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	operator b_input-vs-working-memory-mismatch {	    
+	    WM1 <> nil
+	    V2 <> WM1
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: WORKING MEMORY TO DECLARATIVE MEMORY   //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator c_working-memory-to-declarative-memory {
+	    WM1 <> nil
+	==>	
+	    nil -> WM1
+	}
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: WORKING MEMORY TO CONTROL    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator c_working-memory-to-control {
+	    WM1 <> nil
+	    G3 = nil
+	==>	
+	    WM1 -> G3
+	}
+
+}
+	
+	
+	
+//=====================================================//
+/////////DECLARATIVE MEMORY////////////////////////////////////////
+//=====================================================//
+
+define skill primary-network-dm {
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: INPUT TO DECLARATIVE MEMORY    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator b_input-to-declarative-memory {	    
+	    V1 <> nil
+	==>
+	    V2 -> RT1
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: INPUT VS. DECLARATIVE MEMORY      //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator b_input-vs-declarative-memory-match {	    
+	    RT1 <> nil
+	    V2 = RT1
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+	
+	operator b_input-vs-declarative-memory-mismatch {	    
+	    RT1 <> nil
+	    V2 <> RT1
+	==>
+	    nil -> V1
+	    nil -> V2
+	}
+		
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    LOWER-LEVEL: DECLARATIVE MEMORY TO CONTROL    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	
+	operator c_declarative-memory-to-control {
+        G3 = nil
+	==>	
+	    RT1 -> G3
+	}
+
+}
+
+
+
+//=====================================================//
+/////////SCAFFOLDING/////////////////////////////////////////////////
+//=====================================================//
+
+define skill primary-network-scaffold {
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    STATE-CHANGE: SWITCH TO EVALUATION    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+	operator d_switch-to-evaluation-state {
+	    G3 <> nil
+	    V1 <> nil
+	==>
+	    eval -> G1
+	    nil -> V1
+	    nil -> V2
+	}
+	
+}
+
+
+
+//=====================================================//
+/////////TASK CONTROL///////////////////////////////////////////////
+//=====================================================//
+
+define skill task-control-network {
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    HIGHER-LEVEL: REPETITION DETECTION    //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	
+	operator H1Control_repeat {
+	    V1 <> nil
+	    V2 = G3
+	==>
+	    activat -> AC1
+	    reward -> AC2
+	    nil -> G1	    
+	}
+	
+	operator H1Control_repeat_not {
+	    V1 <> nil
+	    V2 <> G3
+	==>
+	    activat -> AC1
+	    punish -> AC2
+	    nil -> G1
+	}	
+	
+}
+
+
+
+//=====================================================//
+/////////TASK NEGATIVE OPERATION //////////////////////////////////
+//=====================================================//
+
+//define skill default-network {
+
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+	//    HIGHER-LEVEL DEFAULT-STATE OPERATIONS     //
+	//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~//
+
+//	operator H2Default_wait_or_wander_off (activation = 0) {
+//	    V1 = nil
+//	==>
+//	}
+
+//}
+
+define facts {
+
+	(le le)
+	(wi wi)
+	(ji ji)
+	(de de)
+
+	(di di)
+	(je je)
+	(li li)
+	(we we)
+
+	(f f)
+	(s s)
+	(t t)
+
+}
+
+define init-script {
+	set-graph-title("expectancy")
+	set-average-window(10)
+}
+
+define script {
+	trace-operators("true")
+	list = [
+	["le", "di", "le"], ["le", "je", "le"], ["le", "li", "le"], ["le", "we", "le"],
+	["wi", "di", "wi"], ["wi", "je", "wi"], ["wi", "li", "wi"], ["wi", "we", "wi"], 
+	["ji", "di", "ji"], ["ji", "je", "ji"], ["ji", "li", "ji"], ["ji", "we", "ji"], 
+	["de", "di", "de"], ["de", "je", "de"], ["de", "li", "de"], ["de", "we", "de"]
+	]	
+	trial-start()	
+//	list = shuffle(list)
+//	for k in 0 to length(list) {
+		k = random(length(list))	
+		pattern = list[k]
+		fst = ["f", "s", "t"]
+		starttime = time()
+		print("Training pattern: ", pattern[0], pattern[1], pattern[2])
+		for i in 0 to 2 {
+			if (i != 2) {
+				screen(fst[i], pattern[i])
+				print("Displaying ", pattern[i], " at ", time())
+				run-relative-time(0.330)
+				print("")
+				screen("nil", "nil")
+				print("blank")
+				run-relative-time(0.250)
+				print("")
+			} else {
+				screen(fst[i], pattern[i])
+				print("Displaying ", pattern[i], " at ", time())
+				run-relative-time-or-action(0.330, "activat")
+				ac-last = last-action()
+				screen("nil", "nil")
+				print("blank, end task ends")
+				if (ac-last[0] != "activat") {
+					run-absolute-time-or-action( (starttime + 1.960), "activat")
+					ac-last = last-action()
+				} else {
+					run-absolute-time(starttime + 1.960)
+				}
+				time = time() - starttime
+
+
+				if (ac-last[0] != "activat") {
+					//issue-reward(0)
+                    issue-penalty-to-failure()
+					print("")
+					print("no prediction")
+					plot-point(0)
+					data-line("0")
+				}  else {
+				if (ac-last[1] == "reward") {
+		    			issue-reward()
+                        issue-penalty-to-failure()
+		    			print("")
+					print("correct prediction")
+					plot-point(1)
+					data-line("1")
+		    		}
+				else {
+		    			//issue-reward(0)
+                        issue-penalty-to-failure()
+					print("")
+		    			print("wrong prediction")
+					plot-point(0)
+					data-line("0")
+		    		}
+				}
+			}	
+		}
+//	}
+	trial-end()
+}
