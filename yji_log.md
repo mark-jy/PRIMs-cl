@@ -1,5 +1,5 @@
 #### 2020-08-18
-added edl as an alternative to context-op learning (only limited to the operators for now)  
+added edl as an alternative to context-op learning (only limited to the context-operator learning for now, the next step is mirror that in inter-operator learning)  
 
 (note. since there can be infinitely many contexts, the Vtotal term is divided by no.refs, -- or perhaps wrapped around by tanh?)
 
