@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import Rainbow
 
 /**
  struct to store operators in an easier to use format than Chunks
@@ -114,6 +115,9 @@ class Operator {
     var previousOperators: [(Chunk,Double,[(String, String, Chunk)])] = []
     /// mark: List of unfired operators with time and context. Context is use to support learning between all context chunks and operators
     var failedOperators: [(Chunk,Double,[(String, String, Chunk)])] = []
+    
+    /// mark: for edl, list of operators, their associated contexts, and accumulated association weights
+    static var weightVec: [String:(Chunk,Double)] = [:]
 
     init(model: Model) {
         self.model = model
@@ -222,7 +226,7 @@ class Operator {
         defer {
             previousOperators = [] // Once we're done clear the previous operators
         }
-        guard (model.dm.goalOperatorLearning || model.dm.interOperatorLearning || model.dm.contextOperatorLearning) && model.reward != 0.0  else { return }
+        guard (model.dm.goalOperatorLearning || model.dm.interOperatorLearning || model.dm.contextOperatorLearning || model.dm.edlContextOperatorLearning) && model.reward != 0.0  else { return }
         let goalChunk = model.formerBuffers["goal"] // take formerBuffers goal, because goal may have been replaced by stop or nil
         guard goalChunk != nil else { return }
         var goalChunks = Set<Chunk>()
@@ -237,7 +241,53 @@ class Operator {
         var prevOperatorChunk: Chunk? = nil
         for (operatorChunk,operatorTime,context) in previousOperators {
             let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / model.reward
-            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / model.reward         
+            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / model.reward
+            
+        // edl parameter Vtotal
+        var Vtotal = 0.0
+        var uniqCueOutcomes = 1.0  // an outcome can be associated with infinite cues
+        Vtotal = 0.0
+        uniqCueOutcomes = 1.0
+        if Operator.weightVec.isEmpty {
+            Vtotal = 0.0
+        } else {
+            for (_, opWeight) in Operator.weightVec {
+                if opWeight.0 == operatorChunk && opWeight.1 > 0.0 {
+                    Vtotal += opWeight.1
+                    uniqCueOutcomes += 1.0
+                }
+            }
+            Vtotal = Vtotal / uniqCueOutcomes
+        }
+            
+            if model.dm.edlContextOperatorLearning {
+                // mark: rescorla-wagner weights
+                for (bufferName, slotName, chunk) in context {
+                    if bufferName != "goal" { // mark: not considering background yet
+                        
+                    let cue = bufferName + "%" + slotName + "%" + chunk.name  // context is the Cue in edl
+                    let cueOutcome = cue + "  <-->  " + operatorChunk.name
+                        
+                    if operatorChunk.assocs[cue] == nil {
+                        operatorChunk.assocs[cue] = (0.0, 0)
+                    }
+                        
+                    // Rescorla-Wagner Equation without "Salience"
+                    operatorChunk.assocs[cue]!.0 += model.dm.beta * (1.0 - Vtotal)
+                    operatorChunk.assocs[cue]!.1 += 1
+                    /**
+                    if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
+                        operatorChunk.addReference() // Also increase baselevel activation of the operator
+                    }
+                    */
+                    model.addToTrace("[Vtotal = \((Vtotal).string(fractionDigits: 2))] with edl: Updating assoc " + "  \(cueOutcome)  " + " to \(operatorChunk.assocs[cue]!.0.string(fractionDigits: 3))", level: 5)
+                    
+                    Operator.weightVec[cueOutcome] = (operatorChunk, operatorChunk.assocs[cue]!.0)
+                    
+                    }
+                }
+            }
+            
             if model.dm.contextOperatorLearning {
                 for (bufferName, slotName, chunk) in context {
                     let triplet = bufferName + "%" + slotName + "%" + chunk.name
@@ -296,7 +346,7 @@ class Operator {
         defer {
             failedOperators = [] // Once we're done clear the previous operators
         }
-        guard (model.dm.goalOperatorLearning || model.dm.interOperatorLearning || model.dm.contextOperatorLearning) && model.negreward <= 0.0  else { return }
+        guard (model.dm.goalOperatorLearning || model.dm.interOperatorLearning || model.dm.contextOperatorLearning || model.dm.edlContextOperatorLearning) && model.negreward <= 0.0  else { return }
         let goalChunk = model.formerBuffers["goal"] // take formerBuffers goal, because goal may have been replaced by stop or nil
         guard goalChunk != nil else { return }
         var goalChunks = Set<Chunk>()
@@ -310,8 +360,54 @@ class Operator {
         guard goalChunks != [] else { return }
         var prevOperatorChunk: Chunk? = nil
         for (operatorChunk,operatorTime,context) in failedOperators {
-            let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / (0 - model.negreward)
-            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / (0 - model.negreward)
+            let goalOpReward = model.dm.defaultOperatorAssoc * (payoff - (model.time - operatorTime)) / (10 - model.negreward)
+            let interOpReward = model.dm.defaultInterOperatorAssoc * (payoff - (model.time - operatorTime)) / (10 - model.negreward)
+            
+            // edl parameter Vtotal
+            var Vtotal = 0.0
+            var uniqCueOutcomes = 1.0  // an outcome can be associated with infinite cues
+            Vtotal = 0.0
+            uniqCueOutcomes = 1.0
+            if Operator.weightVec.isEmpty {
+                Vtotal = 0.0
+            } else {
+                for (_, opWeight) in Operator.weightVec {
+                    if opWeight.0 == operatorChunk && opWeight.1 > 0.0 {
+                        Vtotal += opWeight.1
+                        uniqCueOutcomes += 1.0
+                    }
+                }
+                Vtotal = Vtotal / uniqCueOutcomes
+            }
+            
+            if model.dm.edlContextOperatorLearning {
+                // mark: rescorla-wagner weights
+                for (bufferName, slotName, chunk) in context {
+                    if bufferName != "goal" { // mark: not considering background yet
+                        
+                    let cue = bufferName + "%" + slotName + "%" + chunk.name  // context is the Cue in edl
+                    let cueOutcome = cue + "  <-->  " + operatorChunk.name
+                        
+                    if operatorChunk.assocs[cue] == nil {
+                        operatorChunk.assocs[cue] = (0.0, 0)
+                    }
+                        
+                    // Rescorla-Wagner Equation without "Salience"
+                    operatorChunk.assocs[cue]!.0 += model.dm.beta * (0.0 - Vtotal)
+                    // 1.333 = x + .5 * (1 - 0.33)
+                    operatorChunk.assocs[cue]!.1 += 1
+                    /**
+                    if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
+                        operatorChunk.addReference() // Also increase baselevel activation of the operator
+                    }
+                    */
+                    model.addToTrace("[Vtotal = \((Vtotal).string(fractionDigits: 2))] with edl: [neg] Updating assoc " + "  \(cueOutcome)  " + " to \(operatorChunk.assocs[cue]!.0.string(fractionDigits: 3))", level: 5)
+                    
+                    Operator.weightVec[cueOutcome] = (operatorChunk, operatorChunk.assocs[cue]!.0)
+                    }
+                }
+            }
+            
             if model.dm.contextOperatorLearning {
                 for (bufferName, slotName, chunk) in context {
                     let triplet = bufferName + "%" + slotName + "%" + chunk.name
@@ -360,7 +456,6 @@ class Operator {
                     }
                     prevOperatorChunk = operatorChunk
                 }
-
             }
         }
     }
@@ -529,6 +624,13 @@ class Operator {
             let item = (opRetrieved!, model.time - latency, model.dm.contextOperatorLearning ? allContextChunks() : [])
             previousOperators.append(item)
         }
+        
+        // mark: add edl
+        if model.dm.edlContextOperatorLearning {
+            let item = (opRetrieved!, model.time - latency, model.dm.edlContextOperatorLearning ? allContextChunks() : [])
+            previousOperators.append(item)
+        }
+        
         if !model.silent {
             if let opr = opRetrieved {
                 model.addToTrace("*** Retrieved operator \(opr.name) with latency \(latency.string(fractionDigits: 3))", level: 1)

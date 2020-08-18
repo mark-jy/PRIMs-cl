@@ -295,6 +295,17 @@ class Chunk: NSObject, NSCoding {
     - returns: the Sji value
     */
     func sji(_ chunk: Chunk, buffer: String? = nil, slot: String? = nil) -> Double {
+        
+        // add edl
+        if model.dm.edlContextOperatorLearning && slot != nil {
+            let value = chunk.assocs[buffer! + "%" + slot! + "%" + self.name]
+            if value != nil {
+                return calculateSji(value!)
+            } else {
+                return 0.0
+            }
+        }
+        
         if model.dm.contextOperatorLearning && slot != nil {
             let value = chunk.assocs[buffer! + "%" + slot! + "%" + self.name]
             if value != nil {

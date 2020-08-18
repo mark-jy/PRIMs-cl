@@ -51,7 +51,7 @@ let scriptFunctions: [String:([Factor], Model?) throws -> (result: Factor?, done
     "set-graph-title": setGraphTitle,
     "data-line": dataLine,
     "issue-reward": issueReward,
-    "issue-penalty": issueNegReward, //mark: simultaneous negreward
+    "issue-penalty-to-failure": issueNegReward, //mark: simultaneous negreward
     "shuffle": shuffle,
     "length": length,
     "sleep": sleepPrims,
@@ -500,7 +500,7 @@ func issueReward(_ content: [Factor], model: Model?) throws -> (result: Factor?,
         default: throw RunTimeError.nonNumberArgument
         }
     }
-    if reward > 0 {
+    if reward > 0 { // mark: now pr. compilation in edl as well
         model!.operators.compileAll()
     }
     model!.operators.updateOperatorSjis(reward)

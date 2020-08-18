@@ -29,6 +29,9 @@ class Declarative: NSObject, NSCoding  {
     static let contextOperatorLearningDefault = false
     static let operatorBaselevelLearningDefault = false
     static let interOperatorLearningDefault = false
+    
+    static let edlContextOperatorLearningDefault = false // mark: add edl-based context-op learning
+    
     static let betaDefault = 0.1
     static let explorationExploitationFactorDefault = 0.0
     static let declarativeBufferStuffingDefault = false
@@ -70,7 +73,11 @@ class Declarative: NSObject, NSCoding  {
     /// Indicates whether associations between goals and operators will be learned
     var goalOperatorLearning = goalOperatorLearningDefault
     /// Indicates whether associations between all context chunks and operators will be learned
-    var contextOperatorLearning = contextOperatorLearningDefault 
+    var contextOperatorLearning = contextOperatorLearningDefault
+    
+    /// mark: Indicates whether - based on the edl - associations between all context chunks and operators will be learned
+    var edlContextOperatorLearning = edlContextOperatorLearningDefault
+    
     /// Are we also adding a reference to a successful operator?
     var operatorBaselevelLearning = operatorBaselevelLearningDefault
     /// Indicates whether associations between subsequent operators are learned
@@ -170,6 +177,9 @@ class Declarative: NSObject, NSCoding  {
         latencyFactor = Declarative.latencyFactorDefault
         goalOperatorLearning = Declarative.goalOperatorLearningDefault
         contextOperatorLearning = Declarative.contextOperatorLearningDefault
+        
+        edlContextOperatorLearning = Declarative.edlContextOperatorLearningDefault // mark: edl context-op
+        
         operatorBaselevelLearning = Declarative.operatorBaselevelLearningDefault
         interOperatorLearning = Declarative.interOperatorLearningDefault
         beta = Declarative.betaDefault

@@ -422,6 +422,8 @@ class Model: NSObject, NSCoding {
              dm.contextOperatorLearning = boolVal
         case "inter-operator-learning:":
             dm.interOperatorLearning = boolVal
+        case "edl-context-operator-learning:":
+            dm.edlContextOperatorLearning = boolVal // mark: edl context-op learning
         case "goal-chunk-spreads:":
             dm.goalSpreadingByActivation = boolVal
         case "declarative-buffer-stuffing:":
@@ -732,6 +734,7 @@ class Model: NSObject, NSCoding {
         operators.reset()
         imaginal.reset()
         stillNeedToDoModuleActions = false
+        Operator.weightVec = [:]
         if taskNumber != nil {
             currentTaskIndex = taskNumber!
             scenario = PRScenario()
