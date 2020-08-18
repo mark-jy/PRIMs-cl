@@ -1,5 +1,6 @@
 #### 2020-08-18
-added edl as an alternative to context-op learning
+added edl as an alternative to context-op learning (only limited to the operators for now)  
+
 (note. since there can be infinitely many contexts, the Vtotal term is always divided by a ref.no to prevent it going over above 1)
 
 #### 2020-08-14
