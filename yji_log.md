@@ -1,7 +1,7 @@
 #### 2020-08-18
 added edl as an alternative to context-op learning (only limited to the operators for now)  
 
-(note. since there can be infinitely many contexts, the Vtotal term is wrapped around by tanh)
+(note. since there can be infinitely many contexts, the Vtotal term is divided by no.refs, -- or perhaps wrapped around by tanh?)
 
 #### 2020-08-14
 added negative learning to "context-out" failedOp overload
