@@ -1,5 +1,9 @@
+#### 2020-08-18
+added edl as an alternative to context-op learning
+(note. since there can be infinitely many contexts, the Vtotal term is always divided by a ref.no to prevent it going over above 1)
+
 #### 2020-08-14
-add negative learning to "context-out" failedOp overload
+added negative learning to "context-out" failedOp overload
 
 #### 2020-08-05
 trace declarative chunks
