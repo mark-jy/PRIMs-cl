@@ -1,5 +1,11 @@
+#### 2020-08-23
+revised the edl equation (not complete yet, and still needs to revise spreading to edl-compatible).
+thinking for "decay" vs. "interference" debate, and the zero-sum-game of "interference" vs. "base-level decay"
+  
+(again... only limited to the context-operator learning for now, the next step is mirror that in inter-operator learning)  
+
 #### 2020-08-18
-added edl as an alternative to context-op learning (only limited to the context-operator learning for now, the next step is mirror that in inter-operator learning)  
+added edl as an alternative to context-op learning 
 
 (note. since there can be infinitely many contexts, the Vtotal term is divided by no.refs, -- or perhaps wrapped around by tanh?)
 
