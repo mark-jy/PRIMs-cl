@@ -255,7 +255,7 @@ class Operator {
                     totalActivation = 0.0
                 } else {
                     for (_, cueOutcomeWeight) in Operator.weightVec {
-                        if cueOutcomeWeight.0 == cue {
+                        if cueOutcomeWeight.0 == cue && cueOutcomeWeight.1 == operatorChunk {
                             totalActivation += cueOutcomeWeight.2
                         }
                     }
@@ -371,7 +371,7 @@ class Operator {
                     totalActivation = 0.0
                 } else {
                     for (_, cueOutcomeWeight) in Operator.weightVec {
-                        if cueOutcomeWeight.0 == cue {
+                        if cueOutcomeWeight.0 == cue && cueOutcomeWeight.1 == operatorChunk {
                             totalActivation += cueOutcomeWeight.2
                         }
                     }
