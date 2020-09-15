@@ -484,12 +484,18 @@ class Model: NSObject, NSCoding {
                 dm.activationNoise = numVal!
             case "ga:":
                 dm.goalActivation = numVal!
-            case "input-activation:":
-                dm.inputActivation = numVal!
-            case "retrieval-activation:":
-                dm.retrievalActivation = numVal!
-            case "wm-activation:", "imaginal-activation:":
-                dm.imaginalActivation = numVal!
+            case "input-activation-op:":
+                dm.inputActivationOp = numVal!
+            case "input-activation-ch:":
+                dm.inputActivationCh = numVal!
+            case "retrieval-activation-op:":
+                dm.retrievalActivationOp = numVal!
+            case "retrieval-activation-ch:":
+                dm.retrievalActivationCh = numVal!
+            case "wm-activation-op:", "imaginal-activation-op:":
+                dm.imaginalActivationOp = numVal!
+            case "wm-activation-ch:", "imaginal-activation-ch:":
+                dm.imaginalActivationCh = numVal!
             case "default-operator-assoc:":
                 dm.defaultOperatorAssoc = numVal!
             case "default-inter-operator-assoc:":

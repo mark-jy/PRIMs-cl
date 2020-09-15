@@ -393,9 +393,16 @@ class Chunk: NSObject, NSCoding {
             }
         }
         
-        totalSpreading += spreadingFromBuffer("input", spreadingParameterValue: model.dm.inputActivation).spreading
-        totalSpreading += spreadingFromBuffer("retrievalH", spreadingParameterValue: model.dm.retrievalActivation).spreading
-        totalSpreading += spreadingFromBuffer("imaginal", spreadingParameterValue: model.dm.imaginalActivation).spreading
+        // making divisions between the procedual/syntactic and the declarative/semantic
+        if self.type == "operator" {
+            totalSpreading += spreadingFromBuffer("input", spreadingParameterValue: model.dm.inputActivationOp).spreading
+            totalSpreading += spreadingFromBuffer("retrievalH", spreadingParameterValue: model.dm.retrievalActivationOp).spreading
+            totalSpreading += spreadingFromBuffer("imaginal", spreadingParameterValue: model.dm.imaginalActivationOp).spreading
+        } else {
+            totalSpreading += spreadingFromBuffer("input", spreadingParameterValue: model.dm.inputActivationCh).spreading
+            totalSpreading += spreadingFromBuffer("retrievalH", spreadingParameterValue: model.dm.retrievalActivationCh).spreading
+            totalSpreading += spreadingFromBuffer("imaginal", spreadingParameterValue: model.dm.imaginalActivationCh).spreading
+        }
 //        let val = spreadingFromBuffer("imaginal", spreadingParameterValue: model.dm.imaginalActivation)
 //        print("Spreading from imaginal to \(self.name) is \(val) \(model.dm.imaginalActivation)")
         return totalSpreading

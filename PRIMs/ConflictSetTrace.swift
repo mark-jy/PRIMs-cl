@@ -155,9 +155,17 @@ class ConflictSetTrace {
                     }
                 }
             }
-            s += spreadingFromBufferDescription(bufferName: "input", spreadingParameterValue: model.dm.inputActivation, chunk: chunk, divideBySlots: true).0
-            s += spreadingFromBufferDescription(bufferName: "retrievalH", spreadingParameterValue: model.dm.retrievalActivation, chunk: chunk, divideBySlots: true).0
-            s += spreadingFromBufferDescription(bufferName: "imaginal", spreadingParameterValue: model.dm.imaginalActivation, chunk: chunk, divideBySlots: true).0
+            
+            if chunk.type == "operator"{
+            s += spreadingFromBufferDescription(bufferName: "input", spreadingParameterValue: model.dm.inputActivationOp, chunk: chunk, divideBySlots: true).0
+            s += spreadingFromBufferDescription(bufferName: "retrievalH", spreadingParameterValue: model.dm.retrievalActivationOp, chunk: chunk, divideBySlots: true).0
+            s += spreadingFromBufferDescription(bufferName: "imaginal", spreadingParameterValue: model.dm.imaginalActivationOp, chunk: chunk, divideBySlots: true).0
+            } else {
+            s += spreadingFromBufferDescription(bufferName: "input", spreadingParameterValue: model.dm.inputActivationCh, chunk: chunk, divideBySlots: true).0
+            s += spreadingFromBufferDescription(bufferName: "retrievalH", spreadingParameterValue: model.dm.retrievalActivationCh, chunk: chunk, divideBySlots: true).0
+            s += spreadingFromBufferDescription(bufferName: "imaginal", spreadingParameterValue: model.dm.imaginalActivationCh, chunk: chunk, divideBySlots: true).0
+            }
+            
             chunkTexts[chunk.name] = s
         }
     }

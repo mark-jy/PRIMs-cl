@@ -14,9 +14,12 @@ class Declarative: NSObject, NSCoding  {
     static let optimizedLearningDefault = true
     static let maximumAssociativeStrengthDefault = 3.0
     static let goalActivationDefault = 1.0
-    static let inputActivationDefault = 0.0
-    static let retrievalActivationDefault = 0.0
-    static let imaginalActivationDefault = 0.0
+    static let inputActivationOpDefault = 0.0
+    static let inputActivationChDefault = 0.0
+    static let retrievalActivationOpDefault = 0.0
+    static let retrievalActivationChDefault = 0.0
+    static let imaginalActivationOpDefault = 0.0
+    static let imaginalActivationChDefault = 0.0
     static let retrievalThresholdDefault = -2.0
     static let activationNoiseDefault = 0.2
     static let defaultOperatorAssocDefault = 3.0
@@ -48,12 +51,18 @@ class Declarative: NSObject, NSCoding  {
     var maximumAssociativeStrength: Double = maximumAssociativeStrengthDefault
     /// W parameter in ACT-R
     var goalActivation: Double = goalActivationDefault
-    /// Spreading activation from perception
-    var inputActivation: Double = inputActivationDefault
-    /// Spreading activation from retrieval
-    var retrievalActivation: Double = retrievalActivationDefault
-    /// Spreading activation from imaginal
-    var imaginalActivation: Double = imaginalActivationDefault
+    /// Spreading activation from perception -> operator
+    var inputActivationOp: Double = inputActivationOpDefault
+    /// Spreading activation from perception -> chunk
+    var inputActivationCh: Double = inputActivationChDefault
+    /// Spreading activation from retrieval -> operator
+    var retrievalActivationOp: Double = retrievalActivationOpDefault
+    /// Spreading activation from retrieval -> chunk
+    var retrievalActivationCh: Double = retrievalActivationChDefault
+    /// Spreading activation from imaginal -> operator
+    var imaginalActivationOp: Double = imaginalActivationOpDefault
+    /// Spreading activation from imaginal -> chunk
+    var imaginalActivationCh: Double = imaginalActivationChDefault
     /// RT or tau parameter in ACT-R
     var retrievalThreshold: Double = retrievalThresholdDefault
     /// ans parameter in ACT-R
@@ -164,9 +173,12 @@ class Declarative: NSObject, NSCoding  {
         optimizedLearning = Declarative.optimizedLearningDefault
         maximumAssociativeStrength = Declarative.maximumAssociativeStrengthDefault
         goalActivation = Declarative.goalActivationDefault
-        inputActivation = Declarative.inputActivationDefault
-        retrievalActivation = Declarative.retrievalActivationDefault
-        imaginalActivation = Declarative.imaginalActivationDefault
+        inputActivationOp = Declarative.inputActivationOpDefault
+        inputActivationCh = Declarative.inputActivationChDefault
+        retrievalActivationOp = Declarative.retrievalActivationOpDefault
+        retrievalActivationCh = Declarative.retrievalActivationChDefault
+        imaginalActivationOp = Declarative.imaginalActivationOpDefault
+        imaginalActivationCh = Declarative.imaginalActivationChDefault
         retrievalThreshold = Declarative.retrievalThresholdDefault
         activationNoise = Declarative.activationNoiseDefault
         defaultOperatorAssoc = Declarative.defaultOperatorAssocDefault
