@@ -30,11 +30,9 @@ class Declarative: NSObject, NSCoding  {
     static let latencyFactorDefault = 0.2
     static let goalOperatorLearningDefault = false
     static let contextOperatorLearningDefault = false
-    static let operatorBaselevelLearningDefault = false
+    static let operatorBaselevelLearningDefault = true // set to true just for decay
     static let interOperatorLearningDefault = false
-    
     static let edlContextOperatorLearningDefault = false // mark: add edl-based context-op learning
-    
     static let betaDefault = 0.1
     static let explorationExploitationFactorDefault = 0.0
     static let declarativeBufferStuffingDefault = false
@@ -115,7 +113,10 @@ class Declarative: NSObject, NSCoding  {
     var partialMatching = partialMatchingDefault
     var newPartialMatchingPow = newPartialMatchingDefault
     var newPartialMatchingExp = newPartialMatchingDefault
-    
+    /// Just like previousOperators, this stores the retrieved fact and its relevant contexts
+    var previousFacts: [(Chunk,Double,[(String, String, Chunk)])] = []
+    /// Just like previousOperators, this stores the "failed" or "mismatched" facts
+    var otherFacts: [(Chunk,Double,[(String, String, Chunk)])] = []
     
     var retrieveBusy = false
     var retrieveError = false
@@ -424,6 +425,7 @@ class Declarative: NSObject, NSCoding  {
             if activation > bestActivation {
                 bestActivation = activation
                 bestMatch = ch1
+                print("best match is \(ch1)")
             }        
             }
         if bestActivation > retrievalThreshold {
@@ -487,7 +489,95 @@ class Declarative: NSObject, NSCoding  {
         }
         return (latency(bestActivation) , bestMatch)
     }
-
+    
+    func createNewContext(_ triplet: String) -> Chunk {
+        let sname = "context "+triplet
+        let contextChunk = Chunk(s: sname, m: model)
+        contextChunk.setSlot("isa", value: "context")
+        contextChunk.setSlot("slot1", value: triplet)
+        contextChunk.fixedActivation = 1.0 // should change this later
+        model.buffers["context"] = contextChunk
+        return contextChunk
+    }
+    
+    func updateFactSjis() {
+        defer {
+            previousFacts = [] // Once we're done clear the previous operators
+        }
+        for (factChunk,_,context) in previousFacts { //operatorTime
+            let maxAssoc = model.dm.maximumAssociativeStrength
+            if model.dm.contextOperatorLearning {
+                var triplet: String?
+                for (bufferName, slotName, chunk) in context {
+                    if slotName != "last-operator" {
+                        triplet = bufferName + "%" + "content" + "%" + chunk.name
+                    } else {
+                        triplet = bufferName + "%" + slotName + "%" + chunk.name
+                    }
+                    
+                    // create a new context chunk
+                    var contextchunk: Chunk
+                    contextchunk = createNewContext(triplet!)
+                    contextchunk = model.dm.addToDM(chunk: contextchunk)
+                    
+                    if factChunk.assocs[triplet!] == nil {
+                        factChunk.assocs[triplet!] = (0.0, 0)
+                        contextchunk.dmfan += 1
+                    }
+                    let totalFan = Double(max(1,contextchunk.dmfan))
+                    
+                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (maxAssoc - factChunk.assocs[triplet!]!.0) / totalFan
+                    factChunk.assocs[triplet!]!.1 += 1
+    //                if maxAssoc > 0 && model.dm.operatorBaselevelLearning {
+    //                    factChunk.addReference() // Also increase baselevel activation of the operator
+    //                }
+                    if !model.silent {
+                        model.addToTrace("Updating [context-ch] assoc between \(triplet!) and \(factChunk.name) to \(factChunk.assocs[triplet!]!.0.string(fractionDigits: 3))", level: 5)
+                    }
+                }
+            }
+        }
+    }
+    
+    func updateFactSjisNeg() {
+        defer {
+            otherFacts = [] // Once we're done clear the previous operators
+        }
+        for (factChunk,_,context) in otherFacts { //operatorTime
+//            let maxAssoc = model.dm.maximumAssociativeStrength
+            if model.dm.contextOperatorLearning {
+                var triplet: String?
+                for (bufferName, slotName, chunk) in context {
+                    if slotName != "last-operator" {
+                        triplet = bufferName + "%" + "content" + "%" + chunk.name
+                    } else {
+                        triplet = bufferName + "%" + slotName + "%" + chunk.name
+                    }
+                    
+                    // create a new context chunk
+                    var contextchunk: Chunk
+                    contextchunk = createNewContext(triplet!)
+                    contextchunk = model.dm.addToDM(chunk: contextchunk)
+                    
+                    if factChunk.assocs[triplet!] == nil {
+                        factChunk.assocs[triplet!] = (0.0, 0)
+                        contextchunk.dmfan += 1
+                    }
+                    let totalFan = Double(max(1,contextchunk.dmfan))
+                    
+                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (0 - factChunk.assocs[triplet!]!.0) / totalFan
+                    factChunk.assocs[triplet!]!.1 += 1
+    //                if maxAssoc > 0 && model.dm.operatorBaselevelLearning {
+    //                    factChunk.addReference() // Also increase baselevel activation of the operator
+    //                }
+                    if !model.silent {
+                        model.addToTrace("[neg] Updating [context-ch] assoc between \(triplet!) and \(factChunk.name) to \(factChunk.assocs[triplet!]!.0.string(fractionDigits: 3))", level: 5)
+                    }
+                }
+            }
+        }
+    }
+    
     func action() -> Double {
         let stuff = model.buffers["retrievalR"] == nil
         let emptyRetrieval = Chunk(s: "emptyRetrieval", m: model)
@@ -496,11 +586,28 @@ class Declarative: NSObject, NSCoding  {
         var latency: Double = 0.0
         var retrieveResult: Chunk? = nil
         if partialMatching {
+            model.addToTrace("uses partial matching", level:5)
             (latency, retrieveResult) = partialRetrieve(retrievalQuery, mismatchFunction: mismatchFunction)
         } else if blending {
+            model.addToTrace("uses blending", level:5)
             (latency, retrieveResult) = blendedRetrieve(chunk: retrievalQuery)
         } else {
+            model.addToTrace("uses basic retrieval", level:5)
             (latency, retrieveResult) = retrieve(retrievalQuery)
+        }
+        let cfs = model.dm.conflictSet.sorted(by: { (item1, item2) -> Bool in
+            let (_,a1) = item1
+            let (_,a2) = item2
+            return a1 > a2
+        })
+        if !model.silent {
+            model.addToTrace("Conflict Set (facts)", level: 5)
+            for (chunk,activation) in cfs {
+                if chunk.type == "fact" {
+                    let outputString = "  " + chunk.name + " A = " + String(format:"%.3f", activation) //+ "\(activation)"
+                    model.addToTrace(outputString, level: 5)
+                }
+            }
         }
         if retrieveResult != nil {
             if stuff {
@@ -549,6 +656,26 @@ class Declarative: NSObject, NSCoding  {
             let failChunk = Chunk(s: "RetrievalFailure", m: model)
             failChunk.setSlot("slot1", value: "error")
             model.buffers["retrievalH"] = failChunk
+        }
+        // add new context chunk learning, now the retrieved chunk is link to its context as well
+        if model.dm.contextOperatorLearning {
+            for (chunk,activation) in cfs {
+                if chunk.type == "fact" && activation >= retrievalThreshold {
+                    let item = (chunk, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
+                    previousFacts.append(item)
+                    model.dm.updateFactSjis()
+                }
+            }
+            for (_,chunkN) in chunks {
+                if chunkN.type == "fact" {
+                    let item = (chunkN, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
+                    otherFacts.append(item)
+                    for (ch,_) in cfs {
+                        otherFacts.removeAll(where: {_ in chunkN.name == ch.name})
+                    }
+                    model.dm.updateFactSjisNeg()
+                }
+            }
         }
         model.buffers["retrievalR"] = nil
         return retrieveResult == nil && stuff ? 0.0 : latency

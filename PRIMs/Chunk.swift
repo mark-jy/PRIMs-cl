@@ -23,6 +23,10 @@ class Chunk: NSObject, NSCoding {
     var referenceList = [Double]()
     /// How many other chunks does this chunk appear in?
     var fan: Int = 0
+    /// How many other operators does this chunk (i.e., context chunk) link with?
+    var opfan: Int = 0
+    /// How many other declarative does this chunk (i.e. context chunk) link with?
+    var dmfan: Int = 0
     /// What was the last noise value. Noise is only updated as time progresses
     var noiseValue: Double = 0
     /// At what time was noise last updated
@@ -75,6 +79,7 @@ class Chunk: NSObject, NSCoding {
         }
         self.printOrder = printOrder
         self.fan = Int(aDecoder.decodeCInt(forKey: "fan"))
+        self.opfan = Int(aDecoder.decodeCInt(forKey: "opfan"))
         self.references = Int(aDecoder.decodeCInt(forKey: "references"))
         let creationTime = aDecoder.decodeDouble(forKey: "creationtime")
         self.creationTime = creationTime == -1.0 ? nil : creationTime
@@ -97,6 +102,7 @@ class Chunk: NSObject, NSCoding {
         coder.encode(slotvals, forKey: "slotvals")
         coder.encode(printOrder, forKey: "printorder")
         coder.encodeCInt(Int32(fan), forKey: "fan")
+        coder.encodeCInt(Int32(opfan), forKey: "opfan")
         coder.encodeCInt(Int32(references), forKey: "references")
         coder.encode(creationTime ?? -1.0, forKey: "creationtime")
         coder.encode(self.referenceList, forKey: "referencelist")
@@ -191,7 +197,11 @@ class Chunk: NSObject, NSCoding {
  
         let fixedComponent = fixedActivation == nil ? 0.0 : exp(fixedActivation!)
         if model.dm.optimizedLearning {
-            let result = log(fixedComponent + (Double(references) * pow(model.time - creationTime! + 0.05, -model.dm.baseLevelDecay)) / (1 - model.dm.baseLevelDecay))
+            var refVal: Int
+            if self.type == "operator" {
+                refVal = 1
+            } else { refVal = references }
+            let result = log(fixedComponent + (Double(refVal) * pow(model.time - creationTime! + 0.05, -model.dm.baseLevelDecay)) / (1 - model.dm.baseLevelDecay))
             if fixedActivation != nil && result < fixedActivation! {
                 print("Detected under threshold chunk \(name) age \(model.time - creationTime!) references \(references)")
             }
@@ -199,6 +209,21 @@ class Chunk: NSObject, NSCoding {
         } else {
             return log(fixedComponent + self.referenceList.map{ pow((self.model.time - $0 + 0.05),(-self.model.dm.baseLevelDecay))}.reduce(0.0, + )) // Wew! almost lisp! This is the standard baselevel equation
         }
+    }
+    
+    
+    // connectionist alternative
+    /**
+    - returns: The current con. baselevel activation of the chunk
+    */
+    func baseLevelActivationAlt () -> Double {
+        if self.assocs.count == 0 { return 0 }
+        var result: Double = 0
+        for (_,(assoc,_)) in self.assocs {
+            result += assoc
+            print("\(assoc)")
+        }
+        return result
     }
     
     /**
@@ -269,6 +294,27 @@ class Chunk: NSObject, NSCoding {
         }
         return false
     }
+    
+//    func isAssocWith(_ opChunk: Chunk) -> Bool {
+//        if opChunk.assocs[self.name] == nil { return false } // self means triplet
+//        if self.name.contains("%") {
+//            let (buffername, slotname, val) = self.name.componentsSeparatedByString("%")
+//            for (context,_) in opChunk.assocs {
+//                switch context {
+//                case .symbol(let valContext):
+//                    if valContext.name==self.name {
+//
+//                    }
+//                }
+//            }
+//        }
+//        
+//
+//        return false
+//    }
+    
+    
+        
 
     
     /**
@@ -295,32 +341,31 @@ class Chunk: NSObject, NSCoding {
     - returns: the Sji value
     */
     func sji(_ chunk: Chunk, buffer: String? = nil, slot: String? = nil) -> Double {
-        
-        // add edl
-        if model.dm.edlContextOperatorLearning && slot != nil {
-            let value = chunk.assocs[buffer! + "%" + slot! + "%" + self.name]
-            if value != nil {
-                return calculateSji(value!)
-            } else {
-                return 0.0
+            if model.dm.contextOperatorLearning && slot != nil {
+                var triplet: String?
+                if chunk.type == "operator" || slot == "last-operator" {
+                    triplet = buffer! + "%" + slot! + "%" + self.name
+                } else {
+                    triplet = buffer! + "%" + "content" + "%" + chunk.name
+                }
+                let value = chunk.assocs[triplet!]
+                if value != nil {
+//                    model.addToTrace("c[\(triplet!)] ch[\(chunk.name)] time[\(model.time)]", level: 5)
+                    return calculateSji(value!)
+                } else {
+                    return 0.0
+                }
             }
-        }
-        
-        if model.dm.contextOperatorLearning && slot != nil {
-            let value = chunk.assocs[buffer! + "%" + slot! + "%" + self.name]
-            if value != nil {
-                return calculateSji(value!)
-            } else {
-                return 0.0
+            if let value = chunk.assocs[self.name] {
+                return calculateSji(value)
             }
+//            if self.appearsInSlotOf(chunk) {
+//                model.addToTrace("time for [context-op]", level: 5)
+//                return max(0, model.dm.maximumAssociativeStrength - log(Double(max(1,self.fan))))
+//            }
+            return 0.0
         }
-        if let value = chunk.assocs[self.name] {
-            return calculateSji(value)
-        } else if self.appearsInSlotOf(chunk) {
-            return max(0, model.dm.maximumAssociativeStrength - log(Double(max(1,self.fan))))
-        }
-        return 0.0
-    }
+
     
     /**
     Calculate the spreading of activation from a certain buffer
@@ -333,13 +378,13 @@ class Chunk: NSObject, NSCoding {
         if spreadingParameterValue == 0 { return (spreading: 0, slots: 0) }
         var totalSji = 0.0
         var totalSlots: Int = 0
-        if  let bufferChunk = model.buffers[bufferName] {
-            for (slot,value) in bufferChunk.slotvals {
+        if  let bufferChunk = model.buffers[bufferName] { // buffer of the chunk
+            for (slot,value) in bufferChunk.slotvals { // slot and val in the buffer
                 switch value {
                 case .symbol(let valchunk):
-                    totalSji += valchunk.sji(self, buffer: bufferName, slot: slot)
+                    totalSji += valchunk.sji(self, buffer: bufferName, slot: slot) // receiver self, sender buffer/slot/valchunk
 //                    if valchunk.sji(self) != 0.0 {
-//                        println("Buffer \(bufferName) slot \(value.description) to \(self.name) spreading \(valchunk.sji(self))")
+//                        model.addToTrace("Buffer \(bufferName) slot \(value.description) to \(self.name) spreading \(valchunk.sji(self))", level:5)
 //                    }
                     totalSlots += 1
                 default:
@@ -378,6 +423,7 @@ class Chunk: NSObject, NSCoding {
             }
         } else {
             (spreading, totalSlots) = spreadingFromBuffer("goal", spreadingParameterValue: model.dm.goalActivation)
+            print("calculates the total spreading >>>")
             totalSpreading += spreading * Double(totalSlots)
         }
         /// The next piece of code calculated spreading for "constructed" goals
@@ -419,6 +465,13 @@ class Chunk: NSObject, NSCoding {
     func activation() -> Double {
         if creationTime == nil {return 0}
         return  self.baseLevelActivation()
+            + self.spreadingActivation() + calculateNoise()
+    }
+    
+    // connectionist activation eq.
+    func activationAlt() -> Double {
+        if creationTime == nil {return 0}
+        return  self.baseLevelActivationAlt()
             + self.spreadingActivation() + calculateNoise()
     }
     
