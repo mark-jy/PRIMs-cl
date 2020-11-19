@@ -225,7 +225,7 @@ class Chunk: NSObject, NSCoding {
             count += 1
 //            print("\(assoc)")
         }
-        return result / count
+        return result // count
     }
     
     /**
