@@ -526,7 +526,7 @@ class Declarative: NSObject, NSCoding  {
                     }
                     let totalFan = Double(max(1,contextchunk.dmfan))
                     
-                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (maxAssoc - factChunk.assocs[triplet!]!.0) / totalFan
+                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (1 - factChunk.assocs[triplet!]!.0) / totalFan
                     factChunk.assocs[triplet!]!.1 += 1
     //                if maxAssoc > 0 && model.dm.operatorBaselevelLearning {
     //                    factChunk.addReference() // Also increase baselevel activation of the operator
@@ -565,7 +565,7 @@ class Declarative: NSObject, NSCoding  {
                     }
                     let totalFan = Double(max(1,contextchunk.dmfan))
                     
-                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (0 - factChunk.assocs[triplet!]!.0) / totalFan
+                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (0 - factChunk.assocs[triplet!]!.0) // totalFan
                     factChunk.assocs[triplet!]!.1 += 1
     //                if maxAssoc > 0 && model.dm.operatorBaselevelLearning {
     //                    factChunk.addReference() // Also increase baselevel activation of the operator

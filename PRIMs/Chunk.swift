@@ -219,11 +219,13 @@ class Chunk: NSObject, NSCoding {
     func baseLevelActivationAlt () -> Double {
         if self.assocs.count == 0 { return 0 }
         var result: Double = 0
+        var count: Double = 0
         for (_,(assoc,_)) in self.assocs {
             result += assoc
-            print("\(assoc)")
+            count += 1
+//            print("\(assoc)")
         }
-        return result
+        return result / count
     }
     
     /**
@@ -423,7 +425,7 @@ class Chunk: NSObject, NSCoding {
             }
         } else {
             (spreading, totalSlots) = spreadingFromBuffer("goal", spreadingParameterValue: model.dm.goalActivation)
-            print("calculates the total spreading >>>")
+//            print("calculates the total spreading >>>")
             totalSpreading += spreading * Double(totalSlots)
         }
         /// The next piece of code calculated spreading for "constructed" goals
@@ -464,7 +466,7 @@ class Chunk: NSObject, NSCoding {
     
     func activation() -> Double {
         if creationTime == nil {return 0}
-        return  self.baseLevelActivation()
+        return  self.baseLevelActivationAlt() // self.baseLevelActivation()
             + self.spreadingActivation() + calculateNoise()
     }
     

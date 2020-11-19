@@ -331,7 +331,7 @@ class Operator {
                     }
                     let totalFan = 1 // Double(max(1,contextchunk.opfan))
                     
-                    operatorChunk.assocs[triplet]!.0 += model.dm.beta * (goalOpReward - operatorChunk.assocs[triplet]!.0) / Double(totalFan)
+                    operatorChunk.assocs[triplet]!.0 += model.dm.beta * (1 - operatorChunk.assocs[triplet]!.0) // Double(totalFan)
                     operatorChunk.assocs[triplet]!.1 += 1
                     if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
                         operatorChunk.addReference() // Also increase baselevel activation of the operator
@@ -364,7 +364,7 @@ class Operator {
                         operatorChunk.assocs[prevOperatorChunk!.name] = (0.0, 0)
                     }
                     let totalFan = Double(max(1,operatorChunk.opfan))
-                    operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (interOpReward - operatorChunk.assocs[prevOperatorChunk!.name]!.0) / totalFan
+                    operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (interOpReward - operatorChunk.assocs[prevOperatorChunk!.name]!.0) // totalFan
                     operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
                     if !model.silent {
                         model.addToTrace("Updating [inter-op] assoc between \(prevOperatorChunk!.name) and \(operatorChunk.name) to \(operatorChunk.assocs[prevOperatorChunk!.name]!.0.string(fractionDigits: 3))", level: 5)
@@ -457,7 +457,7 @@ class Operator {
                     }
                     let totalFan = 1//Double(max(1,contextchunk.opfan))
                     
-                    operatorChunk.assocs[triplet]!.0 += model.dm.beta * (0 - operatorChunk.assocs[triplet]!.0) / Double(totalFan)
+                    operatorChunk.assocs[triplet]!.0 += model.dm.beta * (0 - operatorChunk.assocs[triplet]!.0) // Double(totalFan)
                     operatorChunk.assocs[triplet]!.1 += 1
                     if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
                         operatorChunk.addReference() // Also increase baselevel activation of the operator
@@ -493,7 +493,7 @@ class Operator {
                         operatorChunk.assocs[prevOperatorChunk!.name] = (0.0, 0)
                     }
                     let totalFan = Double(max(1,operatorChunk.opfan))
-                    operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (0 - operatorChunk.assocs[prevOperatorChunk!.name]!.0) / totalFan
+                    operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (0 - operatorChunk.assocs[prevOperatorChunk!.name]!.0) // totalFan
                     operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
                     if !model.silent {
                         model.addToTrace("[neg] Updating assoc between \(prevOperatorChunk!.name) and \(operatorChunk.name) to \(operatorChunk.assocs[prevOperatorChunk!.name]!.0.string(fractionDigits: 3))", level: 5)

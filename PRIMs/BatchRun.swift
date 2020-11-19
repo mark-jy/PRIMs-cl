@@ -5,7 +5,6 @@
 //  Created by Niels Taatgen on 5/22/15.
 //  Copyright (c) 2015 Niels Taatgen. All rights reserved.
 //
-
 import Foundation
 
 
@@ -244,3 +243,4 @@ class BatchRun {
 
     
 }
+

@@ -169,6 +169,8 @@ class Expression: CustomStringConvertible {
             return .realNumber(num1 + num2)
         case (.realNumber(let num1), .realNumber(let num2), "-"):
             return .realNumber(num1 - num2)
+        case (.str(let str1), .str(let str2),"+"):
+            return .str(str1+str2)
         default: throw RunTimeError.nonNumberArgument
         }
     }

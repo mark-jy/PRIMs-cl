@@ -64,6 +64,7 @@ let scriptFunctions: [String:([Factor], Model?) throws -> (result: Factor?, done
     "sgp": setGlobalParameter,
     "batch-parameters": batchParameters,
     "str-to-int": strToInt,
+//    "concatenate": concatenate,
     "open-jar": openJar,
     "report-memory": reportMemory,
     "imaginal-to-dm": imaginalToDM,
@@ -708,6 +709,8 @@ func strToInt(_ content: [Factor], model: Model?) throws -> (result: Factor?, do
         throw RunTimeError.errorInFunction("\(content[0]) cannot be converted from string to int")
     }
 }
+
+
 
 /**
  Open jar file, parameters are passed on to command line
