@@ -260,63 +260,9 @@ class Operator {
             let goalOpReward = model.dm.defaultOperatorAssoc // * (payoff - (model.time - operatorTime)) / model.reward
             let interOpReward = model.dm.defaultInterOperatorAssoc // * (payoff - (model.time - operatorTime)) / model.reward
             
-//            // for each operator outcome, calculate sum of old cue-outcome weights in this instance
-//            for (bufferName, slotName, chunk) in context {
-//                let cue = bufferName + "%" + slotName + "%" + chunk.name
-//                totalActivation = 0.0
-//                if Operator.weightVec.isEmpty {
-//                    totalActivation = 0.0
-//                } else {
-//                    for (_, cueOutcomeWeight) in Operator.weightVec {
-//                        if cueOutcomeWeight.0 == cue && cueOutcomeWeight.1 == operatorChunk {
-//                            totalActivation += cueOutcomeWeight.2
-//                        }
-//                    }
-//                }
-//            }
-//
-//            if model.dm.edlContextOperatorLearning {
-//                // again for this operator outcome instance, update each cue-outcome weight to new
-//                for (bufferName, slotName, chunk) in context {
-//                    if bufferName != "goal" { // mark: not considering background yet
-//                    let cue = bufferName + "%" + slotName + "%" + chunk.name
-//                    let cueOutcome = cue + "  <-->  " + operatorChunk.name
-//                    if operatorChunk.assocs[cue] == nil {
-//                        operatorChunk.assocs[cue] = (0.0, 0)
-//                    }
-//                    operatorChunk.assocs[cue]!.0 += model.dm.beta * (1.0 - totalActivation)
-//                    operatorChunk.assocs[cue]!.1 += 1
-//                    /**
-//                    if goalOpReward > 0 && model.dm.operatorBaselevelLearning {
-//                        operatorChunk.addReference() // Also increase baselevel activation of the operator
-//                    }
-//                    */
-//                    model.addToTrace("[Vtotal = \((totalActivation).string(fractionDigits: 2))] with edl: Updating assoc " + "  \(cueOutcome)  " + " to \(operatorChunk.assocs[cue]!.0.string(fractionDigits: 3))", level: 5)
-//
-//                    Operator.weightVec[cueOutcome] = (cue, operatorChunk, operatorChunk.assocs[cue]!.0)
-//
-//                    }
-//                }
-//            }
+            let maxAssoc = operatorChunk.baseLevelActivationAlt()
             
-            
-//            {
-//                if chunk.creationTime == nil {
-//                    chunk.startTime()
-//                }
-//                chunks[chunk.name] = chunk
-//                for (_,val) in chunk.slotvals {
-//                    switch val {
-//                    case .symbol(let refChunk):
-//                        refChunk.fan += 1
-//                    default: break
-//                    }
-//                }
-//                return chunk
-//            }
-            
-            
-            if model.dm.contextOperatorLearning {
+            if model.dm.contextOperatorLearning && maxAssoc < 1 {
                 for (bufferName, slotName, chunk) in context {
                     let triplet = bufferName + "%" + slotName + "%" + chunk.name
                     
@@ -329,7 +275,7 @@ class Operator {
                         operatorChunk.assocs[triplet] = (0.0, 0)
                         contextchunk.opfan += 1
                     }
-                    let totalFan = 1 // Double(max(1,contextchunk.opfan))
+                    // let totalFan = 1 // Double(max(1,contextchunk.opfan))
                     
                     operatorChunk.assocs[triplet]!.0 += model.dm.beta * (1 - operatorChunk.assocs[triplet]!.0) // Double(totalFan)
                     operatorChunk.assocs[triplet]!.1 += 1
@@ -363,7 +309,7 @@ class Operator {
                     if operatorChunk.assocs[prevOperatorChunk!.name] == nil {
                         operatorChunk.assocs[prevOperatorChunk!.name] = (0.0, 0)
                     }
-                    let totalFan = Double(max(1,operatorChunk.opfan))
+                    // let totalFan = Double(max(1,operatorChunk.opfan))
                     operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (interOpReward - operatorChunk.assocs[prevOperatorChunk!.name]!.0) // totalFan
                     operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
                     if !model.silent {
@@ -455,7 +401,7 @@ class Operator {
                         operatorChunk.assocs[triplet] = (0.0, 0)
                         contextchunk.opfan += 1
                     }
-                    let totalFan = 1//Double(max(1,contextchunk.opfan))
+                    // let totalFan = 1//Double(max(1,contextchunk.opfan))
                     
                     operatorChunk.assocs[triplet]!.0 += model.dm.beta * (0 - operatorChunk.assocs[triplet]!.0) // Double(totalFan)
                     operatorChunk.assocs[triplet]!.1 += 1
@@ -492,7 +438,7 @@ class Operator {
                     if operatorChunk.assocs[prevOperatorChunk!.name] == nil {
                         operatorChunk.assocs[prevOperatorChunk!.name] = (0.0, 0)
                     }
-                    let totalFan = Double(max(1,operatorChunk.opfan))
+                    // let totalFan = Double(max(1,operatorChunk.opfan))
                     operatorChunk.assocs[prevOperatorChunk!.name]!.0 += model.dm.beta * (0 - operatorChunk.assocs[prevOperatorChunk!.name]!.0) // totalFan
                     operatorChunk.assocs[prevOperatorChunk!.name]!.1 += 1
                     if !model.silent {

@@ -505,8 +505,8 @@ class Declarative: NSObject, NSCoding  {
             previousFacts = [] // Once we're done clear the previous operators
         }
         for (factChunk,_,context) in previousFacts { //operatorTime
-            let maxAssoc = model.dm.maximumAssociativeStrength
-            if model.dm.contextOperatorLearning {
+            let maxAssoc = factChunk.baseLevelActivationAlt()
+            if model.dm.contextOperatorLearning && maxAssoc < 1 {
                 var triplet: String?
                 for (bufferName, slotName, chunk) in context {
                     if slotName != "last-operator" {
@@ -524,9 +524,9 @@ class Declarative: NSObject, NSCoding  {
                         factChunk.assocs[triplet!] = (0.0, 0)
                         contextchunk.dmfan += 1
                     }
-                    let totalFan = Double(max(1,contextchunk.dmfan))
+                    // let totalFan = Double(max(1,contextchunk.dmfan))
                     
-                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (1 - factChunk.assocs[triplet!]!.0) / totalFan
+                    factChunk.assocs[triplet!]!.0 += model.dm.beta * (1 - factChunk.assocs[triplet!]!.0) // totalFan
                     factChunk.assocs[triplet!]!.1 += 1
     //                if maxAssoc > 0 && model.dm.operatorBaselevelLearning {
     //                    factChunk.addReference() // Also increase baselevel activation of the operator
@@ -563,7 +563,7 @@ class Declarative: NSObject, NSCoding  {
                         factChunk.assocs[triplet!] = (0.0, 0)
                         contextchunk.dmfan += 1
                     }
-                    let totalFan = Double(max(1,contextchunk.dmfan))
+                    // let totalFan = Double(max(1,contextchunk.dmfan))
                     
                     factChunk.assocs[triplet!]!.0 += model.dm.beta * (0 - factChunk.assocs[triplet!]!.0) // totalFan
                     factChunk.assocs[triplet!]!.1 += 1
@@ -644,6 +644,7 @@ class Declarative: NSObject, NSCoding  {
                 }
             }
             model.buffers["retrievalH"] = retrieveResult!
+            
         } else if !stuff  {
             if !model.silent {
                 model.addToTrace("Retrieval failure", level: 2)
@@ -658,24 +659,36 @@ class Declarative: NSObject, NSCoding  {
             model.buffers["retrievalH"] = failChunk
         }
         // add new context chunk learning, now the retrieved chunk is link to its context as well
-        if model.dm.contextOperatorLearning {
-            for (chunk,activation) in cfs {
-                if chunk.type == "fact" && activation >= retrievalThreshold {
-                    let item = (chunk, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
-                    previousFacts.append(item)
-                    model.dm.updateFactSjis()
-                }
-            }
-            for (_,chunkN) in chunks {
-                if chunkN.type == "fact" {
-                    let item = (chunkN, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
-                    otherFacts.append(item)
-                    for (ch,_) in cfs {
-                        otherFacts.removeAll(where: {_ in chunkN.name == ch.name})
+        // mark: before with the idea of spreading-activation to multiple items, i made the spreading
+        // to all items in the retrieved conflict-set. But now i find its better to stick just to the
+        // retrieved item. The reasons: <1> is to be consistent with operant context-operation assoc updates
+        // <2> it better simulate the gradual retrieval of more complex items when the syllables are gradually
+        // unfolded. For instance, for the word "yee-pee", if "yee" is inputed in v1, its still more probable to
+        // just retrieve "yee" at rt1. Afterwards, the "yee" is encoded in wm1, and will stay in wm1 when
+        // "yee-pee" are both processed (possible now "yee-pee" is retrieved at rt1-2). Then specifically in this
+        // case, the wm1 content of "yee" will be able to spread both to "yee" and "yee-pee" stored in decl. system.
+        // this additional association, may gradually help to make "yee-pee" easier to be retrieved then "yee". But
+        // note that this happens when "yee" has been already encoded in wm1.
+        
+        if model.dm.contextOperatorLearning && retrieveResult != nil {
+//             for (chunk,activation) in cfs {
+//                if chunk.type == "fact" && activation >= retrievalThreshold {
+                let item = (retrieveResult!, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
+                previousFacts.append(item)
+                model.dm.updateFactSjis()
+                for (_,chunkN) in chunks {
+                    if chunkN.type == "fact" {
+                        let item = (chunkN, model.time - latency, model.dm.contextOperatorLearning ? model.operators.allContextChunks() : [])
+                        otherFacts.append(item)
+    //                    for (ch,_) in cfs { // same as above
+                            otherFacts.removeAll(where: {_ in chunkN.name == retrieveResult!.name})
+    //                    }
+                        model.dm.updateFactSjisNeg()
                     }
-                    model.dm.updateFactSjisNeg()
                 }
-            }
+//                }
+//            }
+
         }
         model.buffers["retrievalR"] = nil
         return retrieveResult == nil && stuff ? 0.0 : latency

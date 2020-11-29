@@ -330,7 +330,7 @@ class Chunk: NSObject, NSCoding {
         if references == 0 {
             return base
         } else {
-            return base + model.dm.explorationExploitationFactor * actrNoise(model.dm.defaultOperatorAssoc) / sqrt(Double(references))
+            return base + actrNoise(model.dm.explorationExploitationFactor) / sqrt(Double(references))
         }
     }
     
